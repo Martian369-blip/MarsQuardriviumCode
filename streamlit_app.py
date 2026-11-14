@@ -42,13 +42,13 @@ def compute_mandelbrot_set(x_min=-2.0, x_max=0.8, y_min=-1.2, y_max=1.2, res=350
 
 def solve_lorenz_attractor(sigma=10.0, rho=28.0, beta=8.0 / 3.0, steps=4000, dt=0.01):
     xyz = np.zeros((steps, 3))
-    xyz[0] = [0.1, 0.0, 0.0]
+    xyz = (0.1, 0.0, 0.0)
     for i in range(steps - 1):
         x, y, z = xyz[i]
         dx = sigma * (y - x)
         dy = x * (rho - z) - y
         dz = x * y - beta * z
-        xyz[i + 1] = [x + dx * dt, y + dy * dt, z + dz * dt]
+        xyz[i + 1] = (x + dx * dt, y + dy * dt, z + dz * dt)
     return xyz[:, 0], xyz[:, 1], xyz[:, 2]
 
 
@@ -184,7 +184,7 @@ def fetch_nasa_jpl_live_distance(body_id, start_date="2026-11-14", stop_date="20
 # ==============================================================================
 def solve_1d_schrodinger(potential_type="Harmonic Oscillator", num_states=4, points=400):
     x = np.linspace(-5.0, 5.0, points)
-    dx = x[1] - x[0]
+    dx = float(x - x)
 
     if potential_type == "Harmonic Oscillator":
         V = 0.5 * (x ** 2)
@@ -240,11 +240,12 @@ def bell_state_entanglement(bell_type="Phi+ (|00> + |11>)/sqrt(2)"):
     eigvals = eigvals[eigvals > 1e-12]
     entanglement_entropy = float(-np.sum(eigvals * np.log2(eigvals)))
 
+    p00, p01, p10, p11 = [float(np.abs(amp) ** 2) for amp in psi]
     probs = {
-        "|00>": float(np.abs(psi[0]) ** 2),
-        "|01>": float(np.abs(psi[1]) ** 2),
-        "|10>": float(np.abs(psi[2]) ** 2),
-        "|11>": float(np.abs(psi[3]) ** 2),
+        "|00>": p00,
+        "|01>": p01,
+        "|10>": p10,
+        "|11>": p11,
     }
     return psi, rho_A, entanglement_entropy, probs
 
@@ -275,3 +276,4 @@ def solve_symbolic_math(expression_str, mode="Simplify / Evaluate", variable_str
         return {
             "status": "success",
             "input_latex": sp.latex(expr),
+            "result_str": str(result),
