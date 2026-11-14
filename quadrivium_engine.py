@@ -38,9 +38,8 @@ with col1:
     fig, ax = plt.subplots(figsize=(7, 7), facecolor="#0d1117")
     ax.set_facecolor("#0d1117")
 
-    sun_x = 0.0
-    sun_y = 0.0
-    ax.scatter(sun_x, sun_y, color="#ffcc00", s=180, label="Sun (Origin)", zorder=5)
+    origin = np.zeros(1)
+    ax.scatter(origin, origin, color="#ffcc00", s=180, label="Sun (Origin)", zorder=5)
 
     M_full = np.linspace(0, 2 * np.pi, 1000)
     for name, data in active_planets.items():
