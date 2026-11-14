@@ -1,214 +1,277 @@
 import io
-import pandas as pd
-import streamlit as st
-import numpy as np
+import json
+import math
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from scipy.io.wavfile import write
-
-from math_lab import (
-    compute_riemann_zeta_critical_line,
-    compute_mandelbrot_set,
-    solve_lorenz_attractor,
-)
-from computing_lab import (
-    run_elementary_cellular_automaton,
-    shannon_entropy,
-    rsa_key_demonstration,
-)
-from science_lab import (
-    SAMPLE_RATE,
-    INNER_PLANETS,
-    JPL_BODY_IDS,
-    INTERNATIONAL_MODELS,
-    compute_orbit_coordinates,
-    generate_chladni_plate,
-    fetch_nasa_jpl_live_distance,
-)
-from quantum_lab import (
-    solve_1d_schrodinger,
-    qubit_bloch_state,
-    bell_state_entanglement,
-)
-from research_ai_lab import (
-    solve_symbolic_math,
-    query_arxiv_papers,
-    query_crossref_research,
-    query_encyclopedic_synthesis,
-)
-
-st.set_page_config(page_title="Unified Research Engine", layout="wide")
-st.title("Unified Computational Research Engine")
-st.markdown("Research Workbench across **Mathematics, Computing, Physical Science, Quantum Mechanics, and Multi-Domain Literature Synthesis**.")
-
-tab_math, tab_comp, tab_sci, tab_qm, tab_ai = st.tabs([
-    "I. Mathematics Lab",
-    "II. Computing & Cryptography Lab",
-    "III. Physical Science & Ephemeris Lab",
-    "IV. Quantum Mechanics Lab",
-    "V. AI Research Assistant",
-])
+from scipy.linalg import eigh_tridiagonal
+import streamlit as st
+import sympy as sp
 
 # ==============================================================================
-# TAB I: MATHEMATICS LAB
+# 1. MATHEMATICS MODULE
 # ==============================================================================
-with tab_math:
-    st.header("Mathematics: Complex Analysis, Fractals & Nonlinear Dynamics")
-    math_options = [
-        "Riemann Zeta Function on the Critical Line Re(s) = 1/2",
-        "Mandelbrot Complex Dynamical System",
-        "Lorenz Strange Attractor (Chaos Theory)",
-    ]
-    math_domain = st.selectbox("Select Mathematical Research Module", math_options)
+def compute_riemann_zeta_critical_line(t_max=40.0, points=1000, terms=300):
+    t = np.linspace(0.1, t_max, points)
+    n = np.arange(1, terms + 1)[:, None]
+    alternating_signs = (-1.0) ** (n - 1)
+    eta = np.sum(alternating_signs * (n ** (-0.5 - 1j * t[None, :])), axis=0)
+    zeta = eta / (1.0 - 2.0 ** (0.5 - 1j * t))
+    return t, np.real(zeta), np.imag(zeta), np.abs(zeta)
 
-    if math_domain == "Riemann Zeta Function on the Critical Line Re(s) = 1/2":
-        t_max = st.slider("Imaginary Axis Upper Bound (t)", min_value=15.0, max_value=80.0, value=40.0)
-        t, re_z, im_z, abs_z = compute_riemann_zeta_critical_line(t_max=t_max)
 
-        fig_z, ax_z = plt.subplots(figsize=(10, 4), facecolor="#0d1117")
-        ax_z.set_facecolor("#0d1117")
-        ax_z.plot(t, abs_z, color="#38bdf8", linewidth=1.6, label="|ζ(0.5 + it)| Magnitude")
-        ax_z.plot(t, re_z, color="#34d399", alpha=0.6, linewidth=1.0, label="Re(ζ)")
-        ax_z.axhline(0, color="gray", linestyle="--", linewidth=0.8)
-        ax_z.set_title("Riemann Zeta Function along Critical Line s = 0.5 + it", color="white")
-        ax_z.set_xlabel("Imaginary Component (t)", color="gray")
-        ax_z.tick_params(colors="gray")
-        ax_z.legend(facecolor="#161b22", edgecolor="none", labelcolor="white")
-        st.pyplot(fig_z)
+def compute_mandelbrot_set(x_min=-2.0, x_max=0.8, y_min=-1.2, y_max=1.2, res=350, max_iter=80):
+    x = np.linspace(x_min, x_max, res)
+    y = np.linspace(y_min, y_max, res)
+    C = x[None, :] + 1j * y[:, None]
+    Z = np.zeros_like(C)
+    escape_grid = np.zeros(C.shape, dtype=int)
 
-        zeta_df = pd.DataFrame({
-            "t": np.round(t, 4),
-            "Re(zeta)": np.round(re_z, 6),
-            "Im(zeta)": np.round(im_z, 6),
-            "|zeta|": np.round(abs_z, 6),
-        })
-        st.download_button("Export Zeta Critical Line Data (CSV)", zeta_df.to_csv(index=False), "riemann_zeta_critical_line.csv", "text/csv")
+    for i in range(max_iter):
+        mask = np.abs(Z) <= 2.0
+        Z[mask] = Z[mask] ** 2 + C[mask]
+        escape_grid[mask] = i
 
-    elif math_domain == "Mandelbrot Complex Dynamical System":
-        max_iter = st.slider("Escape-Time Iterations", min_value=30, max_value=200, value=80)
-        x, y, grid = compute_mandelbrot_set(max_iter=max_iter)
+    return x, y, escape_grid
 
-        fig_m, ax_m = plt.subplots(figsize=(7, 6), facecolor="#0d1117")
-        ax_m.imshow(grid, extent=[x.min(), x.max(), y.min(), y.max()], cmap="inferno", origin="lower")
-        ax_m.set_title("Mandelbrot Set Stability Boundary (z_{n+1} = z_n^2 + c)", color="white")
-        ax_m.set_xlabel("Re(c)", color="gray")
-        ax_m.set_ylabel("Im(c)", color="gray")
-        ax_m.tick_params(colors="gray")
-        st.pyplot(fig_m)
 
-    elif math_domain == "Lorenz Strange Attractor (Chaos Theory)":
-        rho = st.slider("Rayleigh Number (ρ)", min_value=10.0, max_value=45.0, value=28.0)
-        lx, ly, lz = solve_lorenz_attractor(rho=rho)
+def solve_lorenz_attractor(sigma=10.0, rho=28.0, beta=8.0 / 3.0, steps=4000, dt=0.01):
+    xyz = np.zeros((steps, 3))
+    xyz[0] = [0.1, 0.0, 0.0]
+    for i in range(steps - 1):
+        x, y, z = xyz[i]
+        dx = sigma * (y - x)
+        dy = x * (rho - z) - y
+        dz = x * y - beta * z
+        xyz[i + 1] = [x + dx * dt, y + dy * dt, z + dz * dt]
+    return xyz[:, 0], xyz[:, 1], xyz[:, 2]
 
-        fig_l, ax_l = plt.subplots(figsize=(8, 5), facecolor="#0d1117")
-        ax_l.set_facecolor("#0d1117")
-        ax_l.plot(lx, lz, color="#fbbf24", linewidth=0.7, alpha=0.85)
-        ax_l.set_title(f"Lorenz Phase-Space Projection (X–Z Plane, ρ={rho})", color="white")
-        ax_l.set_xlabel("X (Convective Intensity)", color="gray")
-        ax_l.set_ylabel("Z (Temperature Gradient)", color="gray")
-        ax_l.tick_params(colors="gray")
-        st.pyplot(fig_l)
 
 # ==============================================================================
-# TAB II: COMPUTING & CRYPTOGRAPHY LAB
+# 2. COMPUTING & CRYPTOGRAPHY MODULE
 # ==============================================================================
-with tab_comp:
-    st.header("Computing: Cellular Automata, Information Theory & Cryptography")
-    col_c1, col_c2 = st.columns([1.2, 1])
+def run_elementary_cellular_automaton(rule_number=30, width=121, steps=60):
+    rule_bits = np.array([(rule_number >> i) & 1 for i in range(8)], dtype=int)
+    grid = np.zeros((steps, width), dtype=int)
+    grid[0, width // 2] = 1
 
-    with col_c1:
-        st.subheader("1. Elementary Cellular Automata (Emergent Computation)")
-        wolfram_rules = (30, 90, 110, 184)
-        rule_num = st.selectbox("Select Wolfram Rule", wolfram_rules, index=2)
-        steps = st.slider("Evolution Generations", min_value=30, max_value=150, value=75)
-        ca_grid = run_elementary_cellular_automaton(rule_number=rule_num, width=steps * 2 + 1, steps=steps)
+    for t in range(1, steps):
+        left = np.roll(grid[t - 1], 1)
+        center = grid[t - 1]
+        right = np.roll(grid[t - 1], -1)
+        neighborhood = (left << 2) | (center << 1) | right
+        grid[t] = rule_bits[neighborhood]
 
-        fig_ca, ax_ca = plt.subplots(figsize=(7, 4), facecolor="#0d1117")
-        ax_ca.imshow(ca_grid, cmap="binary", interpolation="nearest")
-        ax_ca.set_title(f"1D Cellular Automaton — Rule {rule_num}", color="white")
-        ax_ca.axis("off")
-        st.pyplot(fig_ca)
+    return grid
 
-    with col_c2:
-        st.subheader("2. Shannon Information Entropy")
-        sample_text = st.text_input("Input Symbol Sequence", value="QUADRIVIUM_QUANTUM_COMPUTING_2026")
-        h_val, counts = shannon_entropy(sample_text)
-        st.metric("Shannon Entropy H(X)", f"{h_val:.4f} bits / symbol")
 
-        st.subheader("3. RSA Modular Cryptography Engine")
-        prime_choices_p = (61, 71, 89, 101)
-        prime_choices_q = (53, 67, 83, 97)
-        p_prime = st.selectbox("Prime p", prime_choices_p, index=0)
-        q_prime = st.selectbox("Prime q", prime_choices_q, index=0)
-        msg_int = st.number_input("Integer Message Payload", min_value=2, max_value=3000, value=369)
-        rsa_res = rsa_key_demonstration(p_prime, q_prime, msg_int)
-        st.dataframe(pd.DataFrame([rsa_res]), use_container_width=True, hide_index=True)
+def shannon_entropy(data_string):
+    if not data_string:
+        return 0.0, {}
+    length = len(data_string)
+    counts = {}
+    for ch in data_string:
+        counts[ch] = counts.get(ch, 0) + 1
+
+    entropy = 0.0
+    for count in counts.values():
+        p = count / length
+        entropy -= p * math.log2(p)
+    return entropy, counts
+
+
+def rsa_key_demonstration(p, q, message_int):
+    n = p * q
+    phi_n = (p - 1) * (q - 1)
+    e = 3
+    while math.gcd(e, phi_n) != 1:
+        e += 2
+    d = pow(e, -1, phi_n)
+    m = message_int % n
+    ciphertext = pow(m, e, n)
+    decrypted = pow(ciphertext, d, n)
+    return {
+        "Modulus (n = p*q)": n,
+        "Euler Totient phi(n)": phi_n,
+        "Public Exponent (e)": e,
+        "Private Exponent (d)": d,
+        "Original Integer (m mod n)": m,
+        "Encrypted Ciphertext (c)": ciphertext,
+        "Decrypted Plaintext": decrypted,
+    }
+
 
 # ==============================================================================
-# TAB III: PHYSICAL SCIENCE & EPHEMERIS LAB
+# 3. PHYSICAL SCIENCE & EPHEMERIS MODULE
 # ==============================================================================
-with tab_sci:
-    st.header("Physical Science: Orbital Mechanics, Wave Physics & Ephemeris Benchmarks")
-    col_s1, col_s2 = st.columns([1.1, 1])
+SAMPLE_RATE = 44100
 
-    with col_s1:
-        st.subheader("1. Keplerian Orbital Mechanics & Sonification")
-        base_freq = st.slider("Earth Orbital Reference Frequency (Hz)", min_value=55.0, max_value=440.0, value=110.0)
-        fig_orb, ax_orb = plt.subplots(figsize=(6, 6), facecolor="#0d1117")
-        ax_orb.set_facecolor("#0d1117")
-        origin = np.zeros(1)
-        ax_orb.scatter(origin, origin, color="#ffcc00", s=160, label="Sun (Origin)", zorder=5)
+INNER_PLANETS = {
+    "Mercury": {"period": 0.240846, "semi_major_axis": 0.387, "eccentricity": 0.2056, "color": "#a8a8a8"},
+    "Venus":   {"period": 0.615198, "semi_major_axis": 0.723, "eccentricity": 0.0067, "color": "#e6c280"},
+    "Earth":   {"period": 1.000000, "semi_major_axis": 1.000, "eccentricity": 0.0167, "color": "#4fa3ff"},
+    "Mars":    {"period": 1.880815, "semi_major_axis": 1.524, "eccentricity": 0.0934, "color": "#ff6b4a"},
+}
 
-        M_full = np.linspace(0, 2 * np.pi, 800)
-        t_audio = np.linspace(0, 5.0, int(SAMPLE_RATE * 5.0), endpoint=False)
-        wave_sum = np.zeros_like(t_audio)
+JPL_BODY_IDS = {"Mercury": "199", "Venus": "299", "Earth": "399", "Mars": "499"}
 
-        for name, data in INNER_PLANETS.items():
-            freq = base_freq / data["period"]
-            x, y = compute_orbit_coordinates(data["semi_major_axis"], data["eccentricity"], M_full)
-            ax_orb.plot(x, y, color=data["color"], linewidth=1.5, label=f"{name} ({freq:.2f} Hz)")
-            wave_sum += np.sin(2 * np.pi * freq * t_audio)
+INTERNATIONAL_MODELS = {
+    "NASA_JPL_DE440":  {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
+    "EUROPE_INPOP21a": {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
+    "RUSSIA_EPM2021":  {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
+    "CHINA_PMO_REF":   {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
+}
 
-        ax_orb.axis("equal")
-        ax_orb.tick_params(colors="gray")
-        ax_orb.legend(facecolor="#161b22", edgecolor="none", labelcolor="white")
-        st.pyplot(fig_orb)
 
-        norm_audio = np.int16((wave_sum / np.max(np.abs(wave_sum))) * 32767)
-        buf = io.BytesIO()
-        write(buf, SAMPLE_RATE, norm_audio)
-        buf.seek(0)
-        st.audio(buf, format="audio/wav")
+def solve_kepler(M, e, iterations=12):
+    M_arr = np.asarray(M, dtype=float)
+    E = M_arr.copy()
+    for _ in range(iterations):
+        E = E - (E - e * np.sin(E) - M_arr) / (1.0 - e * np.cos(E))
+    return E
 
-    with col_s2:
-        st.subheader("2. 2D Acoustic Wave Nodal Geometry (Chladni Plate)")
-        n_mode = st.slider("Wave Mode n", min_value=1, max_value=10, value=3)
-        m_mode = st.slider("Wave Mode m", min_value=1, max_value=10, value=5)
-        Xc, Yc, Zc = generate_chladni_plate(n_mode, m_mode)
 
-        fig_ch, ax_ch = plt.subplots(figsize=(5, 5), facecolor="#0d1117")
-        ax_ch.set_facecolor("#0d1117")
-        nodal_levels = np.zeros(1)
-        ax_ch.contour(Xc, Yc, Zc, levels=nodal_levels, colors="#38bdf8", linewidths=1.6)
-        ax_ch.axis("equal")
-        ax_ch.axis("off")
-        st.pyplot(fig_ch)
+def compute_orbit_coordinates(a, e, M):
+    E = solve_kepler(M, e)
+    x = a * (np.cos(E) - e)
+    y = a * np.sqrt(1.0 - e**2) * np.sin(E)
+    return x, y
 
-    st.divider()
-    st.subheader("3. International Space Agency Ephemeris Benchmark (NASA JPL, ESA, Russia, China)")
-    if st.button("Run Multi-Agency Orbital Comparison"):
-        AU_TO_KM = 149597870.7
-        rows = []
-        for name, data in INNER_PLANETS.items():
-            qx, qy = compute_orbit_coordinates(data["semi_major_axis"], data["eccentricity"], M=0.0)
-            q_rad = float(np.sqrt(qx**2 + qy**2))
-            live_au = fetch_nasa_jpl_live_distance(JPL_BODY_IDS[name])
-            ref_au = live_au if live_au is not None else INTERNATIONAL_MODELS["NASA_JPL_DE440"][name]
-            rows.append({
-                "Planet": name,
-                "Engine Perihelion (AU)": round(q_rad, 6),
-                "NASA JPL Live (AU)": round(live_au, 6) if live_au else "DE440 Ref",
-                "Spatial Delta (km)": f"{abs(q_rad - ref_au) * AU_TO_KM:,.1f}",
-                "EPM2021 / INPOP21a / PMO Ref (AU)": INTERNATIONAL_MODELS["RUSSIA_EPM2021"][name],
-            })
-        bench_df = pd.DataFrame(rows)
-        st.dataframe(bench_df, use_container_width=True, hide_index=True)
+
+def generate_chladni_plate(n, m, resolution=250):
+    x = np.linspace(-1.0, 1.0, resolution)
+    y = np.linspace(-1.0, 1.0, resolution)
+    X, Y = np.meshgrid(x, y)
+    Z = np.cos(n * np.pi * X) * np.cos(m * np.pi * Y) - np.cos(m * np.pi * X) * np.cos(n * np.pi * Y)
+    return X, Y, Z
+
+
+def fetch_nasa_jpl_live_distance(body_id, start_date="2026-11-14", stop_date="2026-11-15"):
+    params = {
+        "format": "json",
+        "COMMAND": f"'{body_id}'",
+        "OBJ_DATA": "'NO'",
+        "MAKE_EPHEM": "'YES'",
+        "EPHEM_TYPE": "'VECTORS'",
+        "CENTER": "'500@10'",
+        "START_TIME": f"'{start_date}'",
+        "STOP_TIME": f"'{stop_date}'",
+        "STEP_SIZE": "'1 d'",
+        "OUT_UNITS": "'AU-D'",
+    }
+    url = "https://nasa.gov?" + urllib.parse.urlencode(params)
+    try:
+        with urllib.request.urlopen(url, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            for line in payload.get("result", "").splitlines():
+                if "X =" in line and "Y =" in line:
+                    clean_line = line.replace("X =", "").replace("Y =", "").replace("Z =", "")
+                    x_str, y_str, z_str = clean_line.split()[:3]
+                    x, y, z = float(x_str), float(y_str), float(z_str)
+                    return float(np.sqrt(x**2 + y**2 + z**2))
+    except Exception:
+        return None
+    return None
+
+
+# ==============================================================================
+# 4. QUANTUM MECHANICS MODULE
+# ==============================================================================
+def solve_1d_schrodinger(potential_type="Harmonic Oscillator", num_states=4, points=400):
+    x = np.linspace(-5.0, 5.0, points)
+    dx = x[1] - x[0]
+
+    if potential_type == "Harmonic Oscillator":
+        V = 0.5 * (x ** 2)
+    elif potential_type == "Infinite Square Well":
+        V = np.zeros_like(x)
+        V[np.abs(x) > 3.0] = 1e4
+    elif potential_type == "Double Well (Quantum Tunneling)":
+        V = 0.25 * (x ** 2 - 4.0) ** 2
+    else:
+        V = np.zeros_like(x)
+
+    diag = (1.0 / (dx ** 2)) + V
+    off_diag = -0.5 / (dx ** 2) * np.ones(points - 1)
+
+    energies, wavefunctions = eigh_tridiagonal(diag, off_diag, select="i", select_range=(0, num_states - 1))
+    for i in range(num_states):
+        norm = np.sqrt(np.trapezoid(wavefunctions[:, i] ** 2, x))
+        wavefunctions[:, i] /= norm
+
+    return x, V, energies, wavefunctions
+
+
+def qubit_bloch_state(theta_deg, phi_deg):
+    theta = np.deg2rad(theta_deg)
+    phi = np.deg2rad(phi_deg)
+
+    alpha = np.cos(theta / 2.0)
+    beta = np.exp(1j * phi) * np.sin(theta / 2.0)
+
+    prob_0 = float(np.abs(alpha) ** 2)
+    prob_1 = float(np.abs(beta) ** 2)
+
+    bx = float(np.sin(theta) * np.cos(phi))
+    by = float(np.sin(theta) * np.sin(phi))
+    bz = float(np.cos(theta))
+    return alpha, beta, prob_0, prob_1, (bx, by, bz)
+
+
+def bell_state_entanglement(bell_type="Phi+ (|00> + |11>)/sqrt(2)"):
+    inv_sqrt2 = 1.0 / np.sqrt(2.0)
+    if bell_type.startswith("Phi+"):
+        psi = np.array([inv_sqrt2, 0.0, 0.0, inv_sqrt2])
+    elif bell_type.startswith("Phi-"):
+        psi = np.array([inv_sqrt2, 0.0, 0.0, -inv_sqrt2])
+    elif bell_type.startswith("Psi+"):
+        psi = np.array([0.0, inv_sqrt2, inv_sqrt2, 0.0])
+    else:
+        psi = np.array([0.0, inv_sqrt2, -inv_sqrt2, 0.0])
+
+    psi_matrix = psi.reshape(2, 2)
+    rho_A = psi_matrix @ psi_matrix.conj().T
+    eigvals = np.linalg.eigvalsh(rho_A)
+    eigvals = eigvals[eigvals > 1e-12]
+    entanglement_entropy = float(-np.sum(eigvals * np.log2(eigvals)))
+
+    probs = {
+        "|00>": float(np.abs(psi[0]) ** 2),
+        "|01>": float(np.abs(psi[1]) ** 2),
+        "|10>": float(np.abs(psi[2]) ** 2),
+        "|11>": float(np.abs(psi[3]) ** 2),
+    }
+    return psi, rho_A, entanglement_entropy, probs
+
+
+# ==============================================================================
+# 5. SYMBOLIC AI & ACADEMIC LITERATURE MODULE
+# ==============================================================================
+def solve_symbolic_math(expression_str, mode="Simplify / Evaluate", variable_str="x"):
+    try:
+        var = sp.Symbol(variable_str.strip() or "x")
+        if "=" in expression_str and mode == "Solve Equation (= 0)":
+            lhs_str, rhs_str = expression_str.split("=", 1)
+            expr = sp.sympify(lhs_str) - sp.sympify(rhs_str)
+        else:
+            expr = sp.sympify(expression_str)
+
+        if mode == "Solve Equation (= 0)":
+            result = sp.solve(expr, var)
+        elif mode == "Differentiate (d/dx)":
+            result = sp.diff(expr, var)
+        elif mode == "Integrate (∫ dx)":
+            result = sp.integrate(expr, var)
+        elif mode == "Series Expansion (Taylor)":
+            result = sp.series(expr, var, 0, 6).removeO()
+        else:
+            result = sp.simplify(expr)
+
+        return {
+            "status": "success",
+            "input_latex": sp.latex(expr),
