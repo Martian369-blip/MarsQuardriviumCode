@@ -37,7 +37,9 @@ with col1:
     st.subheader("Keplerian Orbital Geometry")
     fig, ax = plt.subplots(figsize=(7, 7), facecolor="#0d1117")
     ax.set_facecolor("#0d1117")
-    ax.scatter(, , color="#ffcc00", s=180, label="Sun (Origin)", zorder=5)
+
+    origin = np.zeros(1)
+    ax.scatter(origin, origin, color="#ffcc00", s=180, label="Sun (Origin)", zorder=5)
 
     M_full = np.linspace(0, 2 * np.pi, 1000)
     for name, data in active_planets.items():
