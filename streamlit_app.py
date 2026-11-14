@@ -53,11 +53,12 @@ tab_math, tab_comp, tab_sci, tab_qm, tab_ai = st.tabs([
 # ==============================================================================
 with tab_math:
     st.header("Mathematics: Complex Analysis, Fractals & Nonlinear Dynamics")
-    math_domain = st.selectbox("Select Mathematical Research Module", [
+    math_options = [
         "Riemann Zeta Function on the Critical Line Re(s) = 1/2",
         "Mandelbrot Complex Dynamical System",
         "Lorenz Strange Attractor (Chaos Theory)",
-    ])
+    ]
+    math_domain = st.selectbox("Select Mathematical Research Module", math_options)
 
     if math_domain == "Riemann Zeta Function on the Critical Line Re(s) = 1/2":
         t_max = st.slider("Imaginary Axis Upper Bound (t)", min_value=15.0, max_value=80.0, value=40.0)
@@ -74,7 +75,12 @@ with tab_math:
         ax_z.legend(facecolor="#161b22", edgecolor="none", labelcolor="white")
         st.pyplot(fig_z)
 
-        zeta_df = pd.DataFrame({"t": np.round(t, 4), "Re(zeta)": np.round(re_z, 6), "Im(zeta)": np.round(im_z, 6), "|zeta|": np.round(abs_z, 6)})
+        zeta_df = pd.DataFrame({
+            "t": np.round(t, 4),
+            "Re(zeta)": np.round(re_z, 6),
+            "Im(zeta)": np.round(im_z, 6),
+            "|zeta|": np.round(abs_z, 6),
+        })
         st.download_button("Export Zeta Critical Line Data (CSV)", zeta_df.to_csv(index=False), "riemann_zeta_critical_line.csv", "text/csv")
 
     elif math_domain == "Mandelbrot Complex Dynamical System":
@@ -111,7 +117,8 @@ with tab_comp:
 
     with col_c1:
         st.subheader("1. Elementary Cellular Automata (Emergent Computation)")
-        rule_num = st.selectbox("Select Wolfram Rule", [30, 90, 110, 184], index=2)
+        wolfram_rules = (30, 90, 110, 184)
+        rule_num = st.selectbox("Select Wolfram Rule", wolfram_rules, index=2)
         steps = st.slider("Evolution Generations", min_value=30, max_value=150, value=75)
         ca_grid = run_elementary_cellular_automaton(rule_number=rule_num, width=steps * 2 + 1, steps=steps)
 
@@ -128,8 +135,10 @@ with tab_comp:
         st.metric("Shannon Entropy H(X)", f"{h_val:.4f} bits / symbol")
 
         st.subheader("3. RSA Modular Cryptography Engine")
-        p_prime = st.selectbox("Prime p", [61, 67, 71, 73, 79, 83], index=0)
-        q_prime = st.selectbox("Prime q", [53, 59, 89, 97, 101, 103], index=0)
+        prime_choices_p = (61, 71, 89, 101)
+        prime_choices_q = (53, 67, 83, 97)
+        p_prime = st.selectbox("Prime p", prime_choices_p, index=0)
+        q_prime = st.selectbox("Prime q", prime_choices_q, index=0)
         msg_int = st.number_input("Integer Message Payload", min_value=2, max_value=3000, value=369)
         rsa_res = rsa_key_demonstration(p_prime, q_prime, msg_int)
         st.dataframe(pd.DataFrame([rsa_res]), use_container_width=True, hide_index=True)
@@ -178,7 +187,8 @@ with tab_sci:
 
         fig_ch, ax_ch = plt.subplots(figsize=(5, 5), facecolor="#0d1117")
         ax_ch.set_facecolor("#0d1117")
-        ax_ch.contour(Xc, Yc, Zc, levels=[0.0], colors="#38bdf8", linewidths=1.6)
+        nodal_levels = np.zeros(1)
+        ax_ch.contour(Xc, Yc, Zc, levels=nodal_levels, colors="#38bdf8", linewidths=1.6)
         ax_ch.axis("equal")
         ax_ch.axis("off")
         st.pyplot(fig_ch)
@@ -202,9 +212,3 @@ with tab_sci:
             })
         bench_df = pd.DataFrame(rows)
         st.dataframe(bench_df, use_container_width=True, hide_index=True)
-        st.download_button("Export Ephemeris Benchmark (CSV)", bench_df.to_csv(index=False), "ephemeris_benchmark.csv", "text/csv")
-
-# ==============================================================================
-# TAB IV: QUANTUM MECHANICS LAB
-# ==============================================================================
-with tab_qm:
