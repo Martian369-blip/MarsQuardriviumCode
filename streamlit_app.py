@@ -72,9 +72,9 @@ def run_elementary_cellular_automaton(rule_number=30, width=121, steps=60):
 
 def shannon_entropy(data_string):
     if not data_string:
-        return 0.0, {}
+        return 0.0, dict()
     length = len(data_string)
-    counts = {}
+    counts = dict()
     for ch in data_string:
         counts[ch] = counts.get(ch, 0) + 1
 
@@ -95,15 +95,15 @@ def rsa_key_demonstration(p, q, message_int):
     m = message_int % n
     ciphertext = pow(m, e, n)
     decrypted = pow(ciphertext, d, n)
-    return {
-        "Modulus (n = p*q)": n,
-        "Euler Totient phi(n)": phi_n,
-        "Public Exponent (e)": e,
-        "Private Exponent (d)": d,
-        "Original Integer (m mod n)": m,
-        "Encrypted Ciphertext (c)": ciphertext,
-        "Decrypted Plaintext": decrypted,
-    }
+    return dict([
+        ("Modulus (n = p*q)", n),
+        ("Euler Totient phi(n)", phi_n),
+        ("Public Exponent (e)", e),
+        ("Private Exponent (d)", d),
+        ("Original Integer (m mod n)", m),
+        ("Encrypted Ciphertext (c)", ciphertext),
+        ("Decrypted Plaintext", decrypted),
+    ])
 
 
 # ==============================================================================
@@ -111,21 +111,21 @@ def rsa_key_demonstration(p, q, message_int):
 # ==============================================================================
 SAMPLE_RATE = 44100
 
-INNER_PLANETS = {
-    "Mercury": {"period": 0.240846, "semi_major_axis": 0.387, "eccentricity": 0.2056, "color": "#a8a8a8"},
-    "Venus":   {"period": 0.615198, "semi_major_axis": 0.723, "eccentricity": 0.0067, "color": "#e6c280"},
-    "Earth":   {"period": 1.000000, "semi_major_axis": 1.000, "eccentricity": 0.0167, "color": "#4fa3ff"},
-    "Mars":    {"period": 1.880815, "semi_major_axis": 1.524, "eccentricity": 0.0934, "color": "#ff6b4a"},
-}
+INNER_PLANETS = dict([
+    ("Mercury", dict(period=0.240846, semi_major_axis=0.387, eccentricity=0.2056, color="#a8a8a8")),
+    ("Venus",   dict(period=0.615198, semi_major_axis=0.723, eccentricity=0.0067, color="#e6c280")),
+    ("Earth",   dict(period=1.000000, semi_major_axis=1.000, eccentricity=0.0167, color="#4fa3ff")),
+    ("Mars",    dict(period=1.880815, semi_major_axis=1.524, eccentricity=0.0934, color="#ff6b4a")),
+])
 
-JPL_BODY_IDS = {"Mercury": "199", "Venus": "299", "Earth": "399", "Mars": "499"}
+JPL_BODY_IDS = dict(Mercury="199", Venus="299", Earth="399", Mars="499")
 
-INTERNATIONAL_MODELS = {
-    "NASA_JPL_DE440":  {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
-    "EUROPE_INPOP21a": {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
-    "RUSSIA_EPM2021":  {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
-    "CHINA_PMO_REF":   {"Mercury": 0.38709893, "Venus": 0.72333199, "Earth": 1.00000011, "Mars": 1.52366231},
-}
+INTERNATIONAL_MODELS = dict(
+    NASA_JPL_DE440=dict(Mercury=0.38709893, Venus=0.72333199, Earth=1.00000011, Mars=1.52366231),
+    EUROPE_INPOP21a=dict(Mercury=0.38709893, Venus=0.72333199, Earth=1.00000011, Mars=1.52366231),
+    RUSSIA_EPM2021=dict(Mercury=0.38709893, Venus=0.72333199, Earth=1.00000011, Mars=1.52366231),
+    CHINA_PMO_REF=dict(Mercury=0.38709893, Venus=0.72333199, Earth=1.00000011, Mars=1.52366231),
+)
 
 
 def solve_kepler(M, e, iterations=12):
@@ -152,18 +152,18 @@ def generate_chladni_plate(n, m, resolution=250):
 
 
 def fetch_nasa_jpl_live_distance(body_id, start_date="2026-11-14", stop_date="2026-11-15"):
-    params = {
-        "format": "json",
-        "COMMAND": f"'{body_id}'",
-        "OBJ_DATA": "'NO'",
-        "MAKE_EPHEM": "'YES'",
-        "EPHEM_TYPE": "'VECTORS'",
-        "CENTER": "'500@10'",
-        "START_TIME": f"'{start_date}'",
-        "STOP_TIME": f"'{stop_date}'",
-        "STEP_SIZE": "'1 d'",
-        "OUT_UNITS": "'AU-D'",
-    }
+    params = dict(
+        format="json",
+        COMMAND="'" + str(body_id) + "'",
+        OBJ_DATA="'NO'",
+        MAKE_EPHEM="'YES'",
+        EPHEM_TYPE="'VECTORS'",
+        CENTER="'500@10'",
+        START_TIME="'" + str(start_date) + "'",
+        STOP_TIME="'" + str(stop_date) + "'",
+        STEP_SIZE="'1 d'",
+        OUT_UNITS="'AU-D'",
+    )
     url = "https://nasa.gov?" + urllib.parse.urlencode(params)
     try:
         with urllib.request.urlopen(url, timeout=8) as response:
@@ -241,12 +241,12 @@ def bell_state_entanglement(bell_type="Phi+ (|00> + |11>)/sqrt(2)"):
     entanglement_entropy = float(-np.sum(eigvals * np.log2(eigvals)))
 
     p00, p01, p10, p11 = [float(np.abs(amp) ** 2) for amp in psi]
-    probs = {
-        "|00>": p00,
-        "|01>": p01,
-        "|10>": p10,
-        "|11>": p11,
-    }
+    probs = dict([
+        ("|00>", p00),
+        ("|01>", p01),
+        ("|10>", p10),
+        ("|11>", p11),
+    ])
     return psi, rho_A, entanglement_entropy, probs
 
 
@@ -273,7 +273,9 @@ def solve_symbolic_math(expression_str, mode="Simplify / Evaluate", variable_str
         else:
             result = sp.simplify(expr)
 
-        return {
-            "status": "success",
-            "input_latex": sp.latex(expr),
-            "result_str": str(result),
+        return dict(
+            status="success",
+            input_latex=sp.latex(expr),
+            result_str=str(result),
+            result_latex=sp.latex(result),
+        )
