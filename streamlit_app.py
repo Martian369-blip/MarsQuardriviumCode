@@ -279,3 +279,4 @@ def solve_symbolic_math(expression_str, mode="Simplify / Evaluate", variable_str
             result_str=str(result),
             result_latex=sp.latex(result),
         )
+    except Exception as e:
