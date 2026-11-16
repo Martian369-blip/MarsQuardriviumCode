@@ -42,7 +42,7 @@ def compute_mandelbrot_set(x_min=-2.0, x_max=0.8, y_min=-1.2, y_max=1.2, res=350
 
 def solve_lorenz_attractor(sigma=10.0, rho=28.0, beta=8.0 / 3.0, steps=4000, dt=0.01):
     xyz = np.zeros((steps, 3))
-    xyz[0] = (0.1, 0.0, 0.0)
+    xyz = (0.1, 0.0, 0.0)
     for i in range(steps - 1):
         x, y, z = xyz[i]
         dx = sigma * (y - x)
@@ -184,7 +184,7 @@ def fetch_nasa_jpl_live_distance(body_id, start_date="2026-11-14", stop_date="20
 # ==============================================================================
 def solve_1d_schrodinger(potential_type="Harmonic Oscillator", num_states=4, points=400):
     x = np.linspace(-5.0, 5.0, points)
-    dx = float(x[1] - x[0])
+    dx = float(x - x)
 
     if potential_type == "Harmonic Oscillator":
         V = 0.5 * (x ** 2)
@@ -279,4 +279,3 @@ def solve_symbolic_math(expression_str, mode="Simplify / Evaluate", variable_str
             result_str=str(result),
             result_latex=sp.latex(result),
         )
-    except Exception as e:
